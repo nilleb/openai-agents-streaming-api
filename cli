@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<'EOF'
+Usage: cli <command> [args...]
+
+Commands:
+  setup             Sync project dependencies with uv.
+  serve             Run the FastAPI server (uvicorn svc.api:app --reload).
+  test              Run the pytest suite (passes extra args through).
+  lint              Run ruff check (default target is ".").
+  typecheck         Run ty (passes extra args through).
+  help              Show this help message.
+EOF
+}
+
+unlock() {
+  bw login && export BW_SESSION=$(bw unlock --raw)
+}
+
+serve() {
+    fnox exec uv run python -m src.api.main
+}
+
+cmd="${1:-}"
+if [[ -z "${cmd}" ]]; then
+  usage >&2
+  exit 1
+fi
+shift || true
+
+case "${cmd}" in
+  help|-h|--help)
+    usage
+    ;;
+  unlock)
+    unlock
+    ;;
+  setup)
+    uv sync "$@"
+    ;;
+  test)
+    uv run --group dev pytest "$@"
+    ;;
+  lint)
+    if [[ "$#" -eq 0 ]]; then
+      set -- "."
+    fi
+    uv run --group dev ruff check --fix . "$@"
+    uv run --group dev ruff format . "$@"
+    ;;
+  typecheck)
+    uv run --group dev ty check "$@"
+    ;;
+  serve)
+    serve
+    ;;
+  *)
+    echo "Unknown command: ${cmd}" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

@@ -8,12 +8,9 @@ Session memory is automatically enabled when:
 No additional configuration or code changes needed!
 """
 
-from pydantic import BaseModel
 
-import uuid
 
-from agents import Agent, ItemHelpers, MessageOutputItem, RunContextWrapper, ToolCallItem, ToolCallOutputItem, TResponseInputItem, function_tool, handoff
-from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
+from agents import Agent
 
 
 chat_agent = Agent(

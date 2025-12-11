@@ -188,7 +188,7 @@ class DeepResearchConfig:
         
         for model_name in model_names:
             if not model_name:
-                errors.append(f"Model name cannot be empty for one of the agents.")
+                errors.append("Model name cannot be empty for one of the agents.")
 
         # Validate numeric constraints
         if self.max_concurrent_research_units < 1:
@@ -246,7 +246,7 @@ class DeepResearchConfig:
         # API keys are already masked/omitted by to_dict
         
         config_file = Path(config_path)
-        config_file.parent.mkdir(parents=True, exist_ok=True);
+        config_file.parent.mkdir(parents=True, exist_ok=True)
         
         with open(config_file, 'w') as f:
             json.dump(config_data, f, indent=2, default=str)

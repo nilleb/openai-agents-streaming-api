@@ -11,3 +11,9 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "uvicorn[standard]>=0.35.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.4",
+    "ty>=0.0.1a26",
+]

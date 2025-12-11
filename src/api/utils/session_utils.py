@@ -7,7 +7,7 @@ easily enabled/disabled via environment variables.
 
 import os
 import logging
-from typing import Optional, List, Any
+from typing import Optional, List
 from pathlib import Path
 
 from agents import SQLiteSession

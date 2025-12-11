@@ -1,0 +1,7 @@
+[providers.bitwarden]
+type = "bitwarden"
+profile = "Personal"
+backend = "rbw"
+
+[secrets]
+OPENAI_API_KEY= { provider = "bitwarden", value = "OpenAI Default Project API Key/notes" }

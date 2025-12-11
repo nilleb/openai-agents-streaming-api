@@ -74,17 +74,8 @@ pip install uv
 git clone https://github.com/ahmad2b/openai-agents-streaming-api.git
 cd openai-agents-streaming-api
 
-# Create virtual environment with correct Python version
-uv venv
-
-# Activate virtual environment
-# On Unix/macOS:
-source .venv/bin/activate
-# On Windows:
-.venv\Scripts\activate
-
 # Install project in development mode with all dependencies
-uv pip install -e .
+uv sync
 ```
 
 ### 3. Environment Configuration
@@ -112,10 +103,10 @@ PORT=8000
 
 ```bash
 # Using uvicorn directly (with hot reload)
-uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
 
 # Or using the module directly
-python -m src.api.main
+uv run python -m src.api.main
 ```
 
 ### Production Mode

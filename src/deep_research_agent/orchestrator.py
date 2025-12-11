@@ -60,7 +60,7 @@ def create_main_orchestrator_agent() -> Agent[ResearchContext]:
         tool_description="Generate the comprehensive final research report"
     )
 
-    orchestrator_instructions = f"""You are the Deep Research Agent Orchestrator, responsible for conducting comprehensive research investigations using a systematic, multi-phase approach.
+    orchestrator_instructions = """You are the Deep Research Agent Orchestrator, responsible for conducting comprehensive research investigations using a systematic, multi-phase approach.
 
 WORKFLOW PHASES:
 
