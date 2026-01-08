@@ -1,0 +1,43 @@
+# Top-Level Agents Configuration
+#
+# This file defines which agents are exposed through the API.
+# Each agent references a skill and optionally includes sub-agents.
+
+# Default model for all agents (can be overridden per agent)
+default_model: "gpt-4.1-mini"
+
+# Directory containing skill definitions (relative to this file)
+skills_directory: "."
+
+# Agents to expose through the API
+agents:
+  # Main orchestrator agent that coordinates between specialized agents
+  - name: "Orchestrator"
+    skill: "task-orchestrator"
+    model: "gpt-4.1-mini"
+    sub_agents:
+      - "code-review"
+      - "data-analysis"
+      - "research-assistant"
+    # Note: tool_descriptions is OPTIONAL - by default, each skill's
+    # frontmatter description is used. Only specify tool_descriptions
+    # if you need to override with a different/shorter description.
+    variables:
+      environment: "production"
+
+  # Standalone code review agent
+  - name: "Code Reviewer"
+    skill: "code-review"
+    model: "gpt-4.1-mini"
+
+  # Standalone data analysis agent
+  - name: "Data Analyst"
+    skill: "data-analysis"
+    model: "gpt-4.1-mini"
+    variables:
+      analysis_type: "General"
+
+  # Standalone research assistant
+  - name: "Researcher"
+    skill: "research-assistant"
+    model: "gpt-4.1-mini"

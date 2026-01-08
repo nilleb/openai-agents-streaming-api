@@ -13,6 +13,7 @@ Commands:
   test              Run the pytest suite (passes extra args through).
   lint              Run ruff check (default target is ".").
   typecheck         Run ty (passes extra args through).
+  validate          Validate Agent Skills (passes extra args through).
   help              Show this help message.
 EOF
 }
@@ -57,6 +58,9 @@ case "${cmd}" in
     ;;
   serve)
     serve
+    ;;
+  validate)
+    uv run python -m src.skills_agents.cli validate "$@"
     ;;
   *)
     echo "Unknown command: ${cmd}" >&2
