@@ -41,3 +41,29 @@ agents:
   - name: "Researcher"
     skill: "research-assistant"
     model: "gpt-4.1-mini"
+
+  # HDI PDF Analyzer - orchestrates PDF analysis for GII data
+  - name: "HDI PDF Analyzer"
+    skill: "hdi-pdf-analyzer"
+    model: "gpt-4.1"
+    sub_agents:
+      - "pdf-extractor"
+      - "gii-extractor"
+      - "data-aggregator"
+    variables:
+      document_url: "https://hdr.undp.org/system/files/documents/global-report-document/hdr2023-24reporten.pdf"
+
+  # Standalone PDF extractor
+  - name: "PDF Extractor"
+    skill: "pdf-extractor"
+    model: "gpt-4.1-mini"
+
+  # Standalone GII extractor
+  - name: "GII Extractor"
+    skill: "gii-extractor"
+    model: "gpt-4.1-mini"
+
+  # Standalone data aggregator
+  - name: "Data Aggregator"
+    skill: "data-aggregator"
+    model: "gpt-4.1-mini"
