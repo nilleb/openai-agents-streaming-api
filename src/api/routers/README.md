@@ -24,6 +24,16 @@ These routers load agents from markdown/YAML files:
   - Endpoints: `/helper/*`
   - Simple agent without sub-agents
 
+## Skills Agent Routers
+
+These routers load agents from skills configurations (SKILL.md files):
+
+- `hdi_pdf_analyzer.py` - HDI PDF Analyzer (skills-based)
+  - Loads from: `src/skills_agents/examples/agents.yaml` → `hdi-pdf-analyzer` skill
+  - Endpoints: `/hdi-pdf-analyzer/*`
+  - Uses sub-agents: `pdf-extractor`, `gii-extractor`, `data-aggregator`
+  - Extracts Gender Inequality Index (GII) data from Human Development Report PDFs
+
 ## Standard Endpoints
 
 Each agent router created with `create_agent_router` automatically provides:

@@ -248,9 +248,9 @@ class TestSkillValidation:
         results = runner.validate_all_skills()
 
         for result in results:
-            assert (
-                result.passed
-            ), f"Skill '{result.skill_name}' failed validation: {result.error_message}"
+            assert result.passed, (
+                f"Skill '{result.skill_name}' failed validation: {result.error_message}"
+            )
 
     def test_validate_hdi_analyzer(self):
         """Test HDI analyzer skill validation."""
@@ -280,9 +280,9 @@ class TestAgentBuilding:
 
         for skill_name in skills:
             result = runner.build_agent(skill_name)
-            assert (
-                result.passed
-            ), f"Failed to build agent for '{skill_name}': {result.error_message}"
+            assert result.passed, (
+                f"Failed to build agent for '{skill_name}': {result.error_message}"
+            )
             assert result.output_data is not None
             assert result.output_data["instructions_length"] > 0
 

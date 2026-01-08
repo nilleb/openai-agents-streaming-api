@@ -12,6 +12,7 @@ from .routers.assistant import router as assistant_router
 from .routers.chat import router as chat_router
 from .routers.orchestrator import router as orchestrator_router
 from .routers.helper import router as helper_router
+from .routers.hdi_pdf_analyzer import router as hdi_pdf_analyzer_router
 from .utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -67,6 +68,9 @@ app.include_router(assistant_router)  # /assistant/* endpoints
 app.include_router(chat_router)  # /chat/* endpoints
 app.include_router(orchestrator_router)  # /orchestrator/* endpoints (markdown agent)
 app.include_router(helper_router)  # /helper/* endpoints (markdown agent)
+app.include_router(
+    hdi_pdf_analyzer_router
+)  # /hdi-pdf-analyzer/* endpoints (skills agent)
 
 
 @app.get("/")

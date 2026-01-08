@@ -139,9 +139,9 @@ Return the answer as a simple list with country names and GII values.""",
         top_performers = ["denmark", "switzerland", "sweden", "belgium", "netherlands"]
         found_count = sum(1 for c in top_performers if c in output_lower)
 
-        assert (
-            found_count >= 3
-        ), f"Expected at least 3 top performers, found {found_count}"
+        assert found_count >= 3, (
+            f"Expected at least 3 top performers, found {found_count}"
+        )
         logger.info(f"Found {found_count}/5 expected top performers in response")
 
 
