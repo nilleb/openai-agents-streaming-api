@@ -43,6 +43,7 @@ case "${cmd}" in
     ;;
   setup)
     uv sync "$@"
+    uv run --group dev prek install
     ;;
   test)
     uv run --group dev pytest "$@"
