@@ -21,10 +21,17 @@ src/
 │   ├── orchestrator.py # Multi-agent coordination
 │   ├── tools.py        # Research function tools
 │   └── config.py       # Advanced configuration system
-└── markdown_agents/    # File-based agent system
-    ├── loader.py       # YAML/Markdown agent loader
-    ├── builder.py      # Agent builder with Jinja2 support
-    └── examples/       # Example markdown agents
+├── markdown_agents/    # File-based agent system (legacy)
+│   ├── loader.py       # YAML/Markdown agent loader
+│   ├── builder.py      # Agent builder with Jinja2 support
+│   └── examples/       # Example markdown agents
+└── skills_agents/      # Agent Skills spec implementation
+    ├── discovery.py    # Skill discovery (SKILL.md files)
+    ├── validator.py    # Skill validation per spec
+    ├── builder.py      # Skill-to-Agent conversion
+    ├── loader.py       # High-level loading functions
+    ├── cli.py          # CLI for validation/discovery
+    └── examples/       # Example skills
 ```
 
 Each agent package can be imported and used independently, making the system modular and scalable.
@@ -39,6 +46,7 @@ Each agent package can be imported and used independently, making the system mod
 - 📝 **Markdown-based agents** - Define agents using YAML and Markdown files
 - 🎨 **Jinja2 templating** - Dynamic instructions with variable substitution
 - 🔗 **Hierarchical agents** - Sub-agents as tools with automatic loading
+- 🛠️ **Agent Skills spec** - Standards-compliant skill definitions with validation
 - 📚 **Auto-generated OpenAPI docs** at `/docs`
 - 🔧 **Development-ready** with hot reload and comprehensive logging
 
@@ -82,7 +90,8 @@ git clone https://github.com/ahmad2b/openai-agents-streaming-api.git
 cd openai-agents-streaming-api
 
 # Install project in development mode with all dependencies
-uv sync
+# (also installs pre-commit hooks via prek)
+./cli setup
 ```
 
 ### 3. Environment Configuration
@@ -361,19 +370,31 @@ uv pip install -r uv.lock
 
 ### Code Quality
 
+Use the CLI for consistent code quality checks:
+
 ```bash
-# Install development tools
-uv add --dev black isort flake8 pytest
+# Run all pre-commit hooks (lint, typecheck, validate, tests)
+./cli prek
 
-# Format code
-black src/
-isort src/
+# Individual commands:
+./cli lint       # Run ruff linter and formatter
+./cli typecheck  # Run ty type checker
+./cli test       # Run pytest suite
+./cli validate   # Validate Agent Skills
+```
 
-# Run linting
-flake8 src/
+Or run tools directly:
+
+```bash
+# Format and lint with ruff
+uv run ruff check --fix .
+uv run ruff format .
+
+# Type checking
+uv run ty check
 
 # Run tests
-pytest
+uv run pytest
 ```
 
 ### Working with Individual Agents
@@ -715,6 +736,150 @@ You coordinate complex tasks by delegating to specialized sub-agents.
 3. **Variables**: Pass runtime variables through `markdown_variables` in the router
 4. **Testing**: Always test your agent after creation using the `/info` endpoint first
 5. **Documentation**: Document your agent's purpose in the markdown instructions file
+
+#### Option 3: Skills-based Agent (Agent Skills Specification)
+
+Skills agents implement the open [Agent Skills specification](https://agentskills.io/docs/spec), providing a standardized format for defining agents that can be shared and validated.
+
+##### Quick Start
+
+**Step 1: Create a Skill Directory**
+
+```bash
+mkdir -p src/skills_agents/examples/my-skill
+```
+
+**Step 2: Create the SKILL.md File**
+
+Create `src/skills_agents/examples/my-skill/SKILL.md`:
+
+```markdown
+---
+name: my-skill
+description: A helpful skill that assists with specific tasks. Use when the user needs help with task X.
+license: Apache-2.0
+metadata:
+  author: your-name
+  version: "1.0"
+---
+
+# My Skill Instructions
+
+You are a specialized assistant for this task.
+
+## Context
+
+- **Date**: {{ current_date | default("Not specified") }}
+- **User**: {{ user_name | default("Guest") }}
+
+## Guidelines
+
+1. Be helpful and concise
+2. Provide examples when useful
+3. Ask clarifying questions if needed
+```
+
+**Step 3: Validate the Skill**
+
+```bash
+# Validate all skills
+./cli validate
+
+# Validate specific skill
+./cli validate src/skills_agents/examples/my-skill/
+```
+
+**Step 4: Use the Skill**
+
+```python
+from pathlib import Path
+from skills_agents import build_agent_from_skill_path
+from agents import Runner
+
+# Build agent from skill
+agent = build_agent_from_skill_path(
+    Path("src/skills_agents/examples/my-skill"),
+    variables={"current_date": "2024-01-15"}
+)
+
+# Run the agent
+result = await Runner.run(agent, "Help me with this task")
+```
+
+##### Configure Top-Level Agents
+
+Create an `agents.yaml` to expose skills through the API:
+
+```yaml
+default_model: "gpt-4.1-mini"
+skills_directory: "."
+
+agents:
+  - name: "Orchestrator"
+    skill: "task-orchestrator"
+    sub_agents:
+      - "code-review"
+      - "data-analysis"
+    variables:
+      environment: "production"
+
+  - name: "Code Reviewer"
+    skill: "code-review"
+```
+
+Load and use:
+
+```python
+from skills_agents import load_top_level_agents
+
+agents = load_top_level_agents(Path("agents.yaml"))
+orchestrator = agents["Orchestrator"]  # Has sub-skills as tools
+```
+
+##### SKILL.md Format
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | 1-64 chars, lowercase alphanumeric and hyphens |
+| `description` | Yes | 1-1024 chars, what skill does and when to use |
+| `license` | No | License name or file reference |
+| `compatibility` | No | Environment requirements (max 500 chars) |
+| `metadata` | No | Arbitrary key-value pairs |
+| `allowed-tools` | No | Space-delimited pre-approved tools |
+
+##### Name Constraints
+
+- Lowercase letters (`a-z`), numbers (`0-9`), and hyphens (`-`)
+- Cannot start or end with hyphen
+- No consecutive hyphens (`--`)
+- Must match directory name
+
+✅ Valid: `my-skill`, `code-review-v2`, `data-analysis`
+❌ Invalid: `My-Skill`, `-skill`, `my--skill`, `my_skill`
+
+##### CLI Commands
+
+```bash
+# Validate all skills recursively
+./cli validate
+
+# Validate with strict mode (warnings = errors)
+./cli validate --strict
+
+# List discovered skills
+uv run python -m src.skills_agents.cli list
+```
+
+##### Benefits of Skills Agents
+
+- ✅ **Standards-compliant** - Follows the open Agent Skills specification
+- ✅ **Portable** - Skills can be shared across projects
+- ✅ **Validated** - Built-in validation ensures spec compliance
+- ✅ **Single file** - Everything in one `SKILL.md` with frontmatter
+- ✅ **Jinja2 templating** - Dynamic instructions with variables
+- ✅ **Hierarchical** - Sub-agents through `agents.yaml` configuration
+
+See `src/skills_agents/README.md` for complete documentation.
 
 ## Troubleshooting
 

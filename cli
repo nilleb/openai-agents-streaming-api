@@ -11,6 +11,7 @@ Commands:
   setup             Sync project dependencies with uv.
   serve             Run the FastAPI server (uvicorn svc.api:app --reload).
   test              Run the pytest suite (passes extra args through).
+  integration       Run integration tests with OpenAI API (requires fnox).
   lint              Run ruff check (default target is ".").
   typecheck         Run ty (passes extra args through).
   validate          Validate Agent Skills (passes extra args through).
@@ -46,7 +47,10 @@ case "${cmd}" in
     uv run --group dev prek install
     ;;
   test)
-    uv run --group dev pytest "$@"
+    uv run --group dev pytest --ignore=src/skills_agents/tests/test_hdi_integration.py "$@"
+    ;;
+  integration)
+    fnox exec uv run --group dev pytest src/skills_agents/tests/test_hdi_integration.py -v "$@"
     ;;
   lint)
     if [[ "$#" -eq 0 ]]; then

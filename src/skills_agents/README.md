@@ -305,12 +305,66 @@ async def run_agent(agent_name: str, input: str):
     return {"response": result.final_output}
 ```
 
+## CLI Commands
+
+The skills_agents package includes a CLI for validation and discovery.
+
+### Validate Skills
+
+Validate skills according to the Agent Skills specification:
+
+```bash
+# Validate all skills (recursively searches src/skills_agents/)
+./cli validate
+
+# Validate a specific skill
+./cli validate src/skills_agents/examples/code-review/
+
+# Validate with strict mode (warnings become errors)
+./cli validate --strict
+
+# Verbose output (show info messages)
+./cli validate -v
+```
+
+Output:
+```
+✓ research-assistant: valid
+✓ code-review: valid
+✓ data-analysis: valid
+✓ task-orchestrator: valid
+
+Summary: 4 valid, 0 invalid
+```
+
+### List Skills
+
+List all discovered skills:
+
+```bash
+uv run python -m src.skills_agents.cli list
+```
+
+Output:
+```
+Found 4 skill(s):
+
+  code-review
+    Description: Reviews code for quality, security, and best practices...
+    License: Apache-2.0
+
+  data-analysis
+    Description: Analyzes data, generates insights, and creates visualizations...
+    License: Apache-2.0
+    Compatibility: Requires Python with pandas, numpy, matplotlib libraries
+```
+
 ## Examples
 
 See the `examples/` directory for complete examples:
 
 - `code-review/` - Code review skill
-- `data-analysis/` - Data analysis skill
+- `data-analysis/` - Data analysis skill  
 - `research-assistant/` - Research assistant skill
 - `task-orchestrator/` - Orchestrator skill with sub-agents
 - `agents.yaml` - Top-level agent configuration
