@@ -1,10 +1,11 @@
 import os
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from agents import set_default_openai_api
+from agents import set_default_openai_api, set_default_openai_key
 
 from .routers.research import router as research_router
 from .routers.assistant import router as assistant_router
@@ -14,6 +15,9 @@ from .routers.helper import router as helper_router
 from .utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+# Default API mode for OpenAI
+DEFAULT_OPENAI_API: Literal["chat_completions", "responses"] = "responses"
 
 
 @asynccontextmanager
@@ -27,7 +31,8 @@ async def lifespan(app: FastAPI):
     if not api_key:
         logger.error("OPENAI_API_KEY not set; please define it in your .env file")
     else:
-        set_default_openai_api(api_key)
+        set_default_openai_key(api_key)
+        set_default_openai_api(DEFAULT_OPENAI_API)
         logger.info("OpenAI API key configured")
 
     logger.info("OpenAI Agents Streaming API startup complete")
@@ -49,7 +54,7 @@ app = FastAPI(
 
 # Add CORS middleware for browser compatibility
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # type: ignore[arg-type]
     allow_origins=["*"],  # Configure appropriately for production
     allow_credentials=True,
     allow_methods=["*"],

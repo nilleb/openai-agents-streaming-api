@@ -25,6 +25,7 @@ class TestSkillBuilder:
         assert agent.name == "Code Review"  # Normalized from code-review
         assert agent.model == "gpt-4.1-mini"
         assert agent.instructions is not None
+        assert isinstance(agent.instructions, str)
         assert len(agent.instructions) > 0
 
     def test_build_agent_with_custom_model(self):
@@ -49,6 +50,7 @@ class TestSkillBuilder:
 
         # Check that variables were rendered
         instructions = agent.instructions
+        assert isinstance(instructions, str)
         assert "2024-01-15" in instructions
         assert "Financial" in instructions
         assert "{{ current_date }}" not in instructions
@@ -215,4 +217,5 @@ class TestBuildAgentFromTopLevelConfig:
         )
 
         # Additional variables should override config variables
+        assert isinstance(agent.instructions, str)
         assert "Override" in agent.instructions

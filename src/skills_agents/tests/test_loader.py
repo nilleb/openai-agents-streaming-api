@@ -122,6 +122,7 @@ class TestLoadTopLevelAgents:
 
         data_analyst = agents["Data Analyst"]
         # Variable should be rendered in instructions
+        assert isinstance(data_analyst.instructions, str)
         assert "2024-01-15" in data_analyst.instructions
 
 
@@ -152,5 +153,6 @@ class TestBuildAgentFromSkillPath:
             variables={"current_date": "2024-06-01", "analysis_type": "Financial"},
         )
 
+        assert isinstance(agent.instructions, str)
         assert "2024-06-01" in agent.instructions
         assert "Financial" in agent.instructions

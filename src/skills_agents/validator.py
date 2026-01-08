@@ -287,7 +287,7 @@ class SkillValidator:
                 field_name="allowed-tools",
             )
 
-    def _validate_body(self, body: str, result: ValidationResult) -> None:
+    def _validate_body(self, body: Optional[str], result: ValidationResult) -> None:
         """Validate markdown body content."""
         if not body or not body.strip():
             result.add_warning(

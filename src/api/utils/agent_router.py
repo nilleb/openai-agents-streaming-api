@@ -98,7 +98,7 @@ def create_agent_router(
     # Load agent if it's a path/string (markdown agent)
     if isinstance(agent, (str, Path)):
         try:
-            from ...markdown_agents import load_agent_from_path
+            from ...markdown_agents import load_agent_from_path  # type: ignore[import]
 
             agent_path = Path(agent) if isinstance(agent, str) else agent
             logger.info(f"Loading markdown agent from: {agent_path}")

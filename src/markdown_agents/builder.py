@@ -236,14 +236,14 @@ class AgentBuilder:
                 name=agent_name,
                 instructions=instructions,
                 model=model,
-                tools=tools if tools else None,
+                tools=tools if tools else [],
             )
         else:
             agent = Agent(  # type: ignore[misc]
                 name=agent_name,
                 instructions=instructions,
                 model=model,
-                tools=tools if tools else None,
+                tools=tools if tools else [],
             )
 
         return agent

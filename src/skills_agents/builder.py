@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
+from typing import Callable
 from jinja2 import Environment, BaseLoader
 
 from agents import Agent
@@ -28,7 +29,7 @@ class SkillReferenceLoader(BaseLoader):
 
     def get_source(
         self, environment: Environment, template: str
-    ) -> tuple[str, str, callable]:
+    ) -> tuple[str, str, Callable[[], bool]]:
         if self.skill_path is None:
             raise ValueError("No skill path set for template loading")
 
@@ -155,7 +156,7 @@ class SkillBuilder:
             name=agent_name,
             instructions=full_instructions,
             model=agent_model,
-            tools=tools if tools else None,
+            tools=tools if tools else [],
         )
 
         # Cache the agent

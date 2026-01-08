@@ -84,6 +84,11 @@ def load_skills_from_directory(
 
     for skill_config in discovered:
         if validate:
+            if skill_config.skill_path is None:
+                logger.error(
+                    f"Skipping skill '{skill_config.name}': skill_path is None"
+                )
+                continue
             result = validate_skill(skill_config.skill_path, strict=strict)
             if not result.is_valid:
                 logger.error(

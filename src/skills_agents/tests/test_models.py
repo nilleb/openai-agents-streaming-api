@@ -181,8 +181,11 @@ class TestTopLevelAgentConfig:
         )
         assert config.name == "Orchestrator"
         assert config.model == "gpt-4"
+        assert config.sub_agents is not None
         assert len(config.sub_agents) == 2
+        assert config.tool_descriptions is not None
         assert config.tool_descriptions["skill-a"] == "Description A"
+        assert config.variables is not None
         assert config.variables["key"] == "value"
 
 

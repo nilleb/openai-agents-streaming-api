@@ -5,12 +5,12 @@ Comprehensive function tools for research operations using
 the OpenAI Agents SDK function_tool decorator.
 """
 
-from typing import List
+import logging
+from typing import List, Optional
 from agents import function_tool, RunContextWrapper, Runner
-from ..api.utils.logging import get_logger
 from .models import ResearchContext
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -18,23 +18,13 @@ logger = get_logger(__name__)
 # ============================================================================
 
 
-@function_tool
-async def conduct_research(
+async def _conduct_research_impl(
     ctx: RunContextWrapper[ResearchContext], research_topic: str
 ) -> str:
     """
-    Conduct focused research on a specific topic using individual researcher agents.
+    Internal implementation for conducting research.
 
-    This tool spawns an individual researcher agent that will use available tools
-    (like Tavily MCP server) to conduct comprehensive research on the specified topic.
-    Following the guide's specification for parallel research execution.
-
-    Args:
-        ctx: Runtime context wrapper with ResearchContext
-        research_topic: Specific topic to research in detail
-
-    Returns:
-        Instruction for conducting research
+    This is the core logic that can be called directly for parallel execution.
     """
     context = ctx.context
     logger.info(f"Conducting research on topic: {research_topic}")
@@ -85,7 +75,8 @@ Provide a comprehensive research summary with:
         research_findings = str(result.final_output)
 
         # Store findings in context
-        context.research_findings.append(research_findings)
+        if context.research_findings is not None:
+            context.research_findings.append(research_findings)
         context.current_iteration += 1
 
         logger.info(f"Research completed for topic: {research_topic}")
@@ -100,6 +91,27 @@ Provide a comprehensive research summary with:
         logger.error(error_msg)
         context.error_message = error_msg
         return f"ERROR: {error_msg}"
+
+
+@function_tool
+async def conduct_research(
+    ctx: RunContextWrapper[ResearchContext], research_topic: str
+) -> str:
+    """
+    Conduct focused research on a specific topic using individual researcher agents.
+
+    This tool spawns an individual researcher agent that will use available tools
+    (like Tavily MCP server) to conduct comprehensive research on the specified topic.
+    Following the guide's specification for parallel research execution.
+
+    Args:
+        ctx: Runtime context wrapper with ResearchContext
+        research_topic: Specific topic to research in detail
+
+    Returns:
+        Instruction for conducting research
+    """
+    return await _conduct_research_impl(ctx, research_topic)
 
 
 @function_tool
@@ -152,7 +164,7 @@ async def assess_research_completeness(
     ctx: RunContextWrapper[ResearchContext],
     research_findings: str,
     original_query: str,
-    required_aspects: List[str] = None,
+    required_aspects: Optional[List[str]] = None,
 ) -> str:
     """
     Assess the completeness and quality of research findings.

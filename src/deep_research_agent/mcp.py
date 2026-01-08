@@ -5,7 +5,7 @@ MCP Server for the Deep Research Agent.
 """
 
 import os
-from agents.mcp import MCPServerSse
+from agents.mcp import MCPServerSse  # type: ignore[import]
 from typing import Optional
 
 # ============================================================================

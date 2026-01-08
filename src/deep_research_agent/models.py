@@ -5,7 +5,7 @@ Comprehensive Pydantic models for all agent inputs and outputs,
 based on the Deep Research Agent Implementation Guide.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Any, TYPE_CHECKING
 from enum import Enum
 from pydantic import BaseModel, Field
@@ -74,14 +74,14 @@ class ResearchContext:
 
     # Session metadata (not conversation history - that's in SQLiteSession)
     status: ResearchStatus = ResearchStatus.PENDING
-    created_at: datetime = None
-    updated_at: datetime = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     error_message: Optional[str] = None
 
     # Research State (local to current execution)
     research_brief: Optional[str] = None
     current_stage: str = "clarification"
-    research_findings: list[str] = None
+    research_findings: Optional[list[str]] = None
     compressed_research: Optional[str] = None
     final_report: Optional[str] = None
 
@@ -91,7 +91,7 @@ class ResearchContext:
 
     # Iteration tracking
     current_iteration: int = 0
-    supervisor_decisions: list[dict[str, Any]] = None
+    supervisor_decisions: Optional[list[dict[str, Any]]] = None
 
     def __post_init__(self):
         """Initialize mutable defaults"""
@@ -100,9 +100,9 @@ class ResearchContext:
         if self.supervisor_decisions is None:
             self.supervisor_decisions = []
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = datetime.now(timezone.utc)
         if self.updated_at is None:
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(timezone.utc)
 
 
 # ============================================================================

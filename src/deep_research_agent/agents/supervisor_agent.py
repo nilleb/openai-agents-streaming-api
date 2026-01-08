@@ -6,6 +6,7 @@ Implements the supervisor orchestration logic from the Deep Research Agent Imple
 """
 
 import asyncio
+import logging
 from typing import List
 from datetime import datetime
 from agents import (
@@ -17,11 +18,10 @@ from agents import (
     ModelSettings,
 )
 from ..models import SupervisorDecision, ResearchContext, ResearchTask, ResearchStatus
-from ..tools import conduct_research, research_complete
+from ..tools import conduct_research, research_complete, _conduct_research_impl
 from ..config import DeepResearchConfig
-from ...api.utils.logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ResearchSupervisor:
@@ -82,7 +82,10 @@ class ResearchSupervisor:
         logger.info(f"Executing {len(active_tasks)} research tasks in parallel.")
 
         # Create a list of coroutines for parallel execution
-        tasks_to_run = [conduct_research(ctx, task.topic) for task in active_tasks]
+        # Use the internal implementation function which can be called directly
+        tasks_to_run = [
+            _conduct_research_impl(ctx, task.topic) for task in active_tasks
+        ]
 
         # Execute in parallel and collect results
         # Note: asyncio.gather returns results in the order the awaitables were passed
@@ -153,7 +156,10 @@ class ResearchSupervisor:
 
             # Phase 1: Planning - LLM decides next steps
             supervisor_decision = await self._plan_research_iteration(ctx)
-            ctx.context.supervisor_decisions.append(supervisor_decision.model_dump())
+            if ctx.context.supervisor_decisions is not None:
+                ctx.context.supervisor_decisions.append(
+                    supervisor_decision.model_dump()
+                )
 
             # Phase 2: Check Termination Conditions
             if self._should_terminate_research(ctx, supervisor_decision):
