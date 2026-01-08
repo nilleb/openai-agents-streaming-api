@@ -1,0 +1,39 @@
+# Pre-commit configuration (using prek - https://github.com/j178/prek)
+# Run with: ./cli prek
+
+repos:
+  # Ruff - fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # Local hooks using the CLI
+  - repo: local
+    hooks:
+      # Type checking with ty
+      - id: typecheck
+        name: typecheck
+        entry: uv run --group dev ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      # Validate Agent Skills
+      - id: validate-skills
+        name: validate-skills
+        entry: uv run python -m src.skills_agents.cli validate
+        language: system
+        pass_filenames: false
+        files: SKILL\.md$
+
+      # Run tests
+      - id: pytest
+        name: pytest
+        entry: uv run --group dev pytest src/skills_agents/tests/ -q
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-push]  # Tests only on push (faster commits)

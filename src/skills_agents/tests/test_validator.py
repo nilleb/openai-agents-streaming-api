@@ -33,9 +33,9 @@ class TestSkillValidator:
         for skill_dir in EXAMPLES_DIR.iterdir():
             if skill_dir.is_dir() and (skill_dir / "SKILL.md").exists():
                 result = validator.validate_skill_path(skill_dir)
-                assert result.is_valid, (
-                    f"Skill {skill_dir.name} should be valid: {result.errors}"
-                )
+                assert (
+                    result.is_valid
+                ), f"Skill {skill_dir.name} should be valid: {result.errors}"
 
     def test_validate_nonexistent_skill(self):
         """Test validating a nonexistent skill."""
@@ -95,10 +95,7 @@ class TestSkillValidator:
 
         # In strict mode, the short description warning becomes an error
         # (However validation result might have other errors too like name mismatch)
-        assert any(
-            "short" in issue.message.lower()
-            for issue in result.issues
-        )
+        assert any("short" in issue.message.lower() for issue in result.issues)
 
 
 class TestValidateSkillFunction:

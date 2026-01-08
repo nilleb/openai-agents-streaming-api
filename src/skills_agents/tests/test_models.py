@@ -82,9 +82,10 @@ class TestSkillFrontmatter:
                 name="test_skill",
                 description="A test skill.",
             )
-        assert "lowercase" in str(exc_info.value).lower() or "alphanumeric" in str(
-            exc_info.value
-        ).lower()
+        assert (
+            "lowercase" in str(exc_info.value).lower()
+            or "alphanumeric" in str(exc_info.value).lower()
+        )
 
     def test_name_too_long(self):
         """Test that names exceeding 64 characters are rejected."""
