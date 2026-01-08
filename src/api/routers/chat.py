@@ -7,7 +7,5 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 router = create_agent_router(
-    agent=chat_agent,
-    prefix="/chat",
-    agent_name=chat_agent.name
+    agent=chat_agent, prefix="/chat", agent_name=chat_agent.name
 )

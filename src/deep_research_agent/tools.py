@@ -17,37 +17,36 @@ logger = get_logger(__name__)
 # Research Orchestration Tools
 # ============================================================================
 
+
 @function_tool
 async def conduct_research(
-    ctx: RunContextWrapper[ResearchContext],
-    research_topic: str
+    ctx: RunContextWrapper[ResearchContext], research_topic: str
 ) -> str:
     """
     Conduct focused research on a specific topic using individual researcher agents.
-    
+
     This tool spawns an individual researcher agent that will use available tools
     (like Tavily MCP server) to conduct comprehensive research on the specified topic.
     Following the guide's specification for parallel research execution.
-    
+
     Args:
         ctx: Runtime context wrapper with ResearchContext
         research_topic: Specific topic to research in detail
-        
+
     Returns:
         Instruction for conducting research
     """
     context = ctx.context
     logger.info(f"Conducting research on topic: {research_topic}")
-    
+
     try:
         # Create a researcher agent for this specific topic
         from .agents.researcher_agent import create_researcher_agent
-        
+
         researcher = create_researcher_agent(
-            research_topic=research_topic,
-            max_tool_calls=5
+            research_topic=research_topic, max_tool_calls=5
         )
-        
+
         # Run the researcher agent with comprehensive research prompt
         research_prompt = f"""Conduct comprehensive research on: {research_topic}
 
@@ -78,24 +77,24 @@ Provide a comprehensive research summary with:
 - Supporting evidence and statistics
 - Source attribution for all claims
 - Assessment of information quality and reliability"""
-        
+
         result = await Runner.run(
-            starting_agent=researcher,
-            input=research_prompt,
-            context=context
+            starting_agent=researcher, input=research_prompt, context=context
         )
-        
+
         research_findings = str(result.final_output)
-        
+
         # Store findings in context
         context.research_findings.append(research_findings)
         context.current_iteration += 1
-        
+
         logger.info(f"Research completed for topic: {research_topic}")
-        logger.info(f"Session {context.session_id}: Research iteration {context.current_iteration} completed")
-        
+        logger.info(
+            f"Session {context.session_id}: Research iteration {context.current_iteration} completed"
+        )
+
         return research_findings
-        
+
     except Exception as e:
         error_msg = f"Research failed for topic '{research_topic}': {str(e)}"
         logger.error(error_msg)
@@ -105,30 +104,32 @@ Provide a comprehensive research summary with:
 
 @function_tool
 async def research_complete(
-    ctx: RunContextWrapper[ResearchContext],
-    reason: str,
-    confidence_level: float = 0.8
+    ctx: RunContextWrapper[ResearchContext], reason: str, confidence_level: float = 0.8
 ) -> str:
     """
     Signal that research is complete.
-    
+
     Args:
         ctx: Runtime context wrapper with ResearchContext
         reason: Reason for completing research
         confidence_level: Confidence in research completeness (0-1)
-        
+
     Returns:
         Completion confirmation message
     """
-    logger.info(f"Research completion signaled: {reason} (confidence: {confidence_level})")
-    
+    logger.info(
+        f"Research completion signaled: {reason} (confidence: {confidence_level})"
+    )
+
     # Update context with completion info
     context = ctx.context
     context.confidence_level = confidence_level
     context.current_stage = "completed"
-    
-    logger.info(f"Session {context.session_id}: Research completed at iteration {context.current_iteration}")
-    
+
+    logger.info(
+        f"Session {context.session_id}: Research completed at iteration {context.current_iteration}"
+    )
+
     return f"""
 RESEARCH COMPLETED
 
@@ -145,27 +146,28 @@ processed for final report generation.
 # Research Quality and Analysis Tools
 # ============================================================================
 
+
 @function_tool
 async def assess_research_completeness(
     ctx: RunContextWrapper[ResearchContext],
     research_findings: str,
     original_query: str,
-    required_aspects: List[str] = None
+    required_aspects: List[str] = None,
 ) -> str:
     """
     Assess the completeness and quality of research findings.
-    
+
     Args:
         ctx: Runtime context wrapper
         research_findings: Current research findings to assess
         original_query: Original research query for context
         required_aspects: Optional list of aspects that should be covered
-        
+
     Returns:
         Assessment of research completeness with recommendations
     """
     logger.info(f"Assessing research completeness for query: {original_query}")
-    
+
     try:
         aspects_instruction = ""
         if required_aspects:
@@ -173,7 +175,7 @@ async def assess_research_completeness(
 Required aspects to verify coverage:
 {chr(10).join(f"- {aspect}" for aspect in required_aspects)}
 """
-        
+
         assessment_instruction = f"""
 Please assess the completeness and quality of the following research findings:
 
@@ -220,10 +222,10 @@ Provide your assessment in this format:
 - Confidence level in findings
 - Final recommendations
 """
-        
+
         logger.info("Prepared research completeness assessment instruction")
         return assessment_instruction
-        
+
     except Exception as e:
         error_msg = f"Research assessment preparation failed: {str(e)}"
         logger.error(error_msg)
@@ -234,24 +236,24 @@ Provide your assessment in this format:
 async def synthesize_findings(
     ctx: RunContextWrapper[ResearchContext],
     research_data: List[str],
-    synthesis_focus: str
+    synthesis_focus: str,
 ) -> str:
     """
     Synthesize multiple research findings into coherent insights.
-    
+
     Args:
         ctx: Runtime context wrapper
         research_data: List of research findings to synthesize
         synthesis_focus: Focus area for synthesis
-        
+
     Returns:
         Synthesized research insights
     """
     logger.info(f"Preparing research synthesis with focus: {synthesis_focus}")
-    
+
     try:
         findings_text = "\n\n---\n\n".join(research_data)
-        
+
         synthesis_instruction = f"""
 Please synthesize the following research findings into coherent, actionable insights:
 
@@ -299,10 +301,10 @@ Provide synthesis in this format:
 - Source quality and reliability assessment
 - Citation recommendations for final report
 """
-        
+
         logger.info(f"Prepared synthesis instruction for {len(research_data)} findings")
         return synthesis_instruction
-        
+
     except Exception as e:
         error_msg = f"Research synthesis preparation failed: {str(e)}"
         logger.error(error_msg)
@@ -331,4 +333,4 @@ ALL_RESEARCH_TOOLS = ORCHESTRATION_TOOLS + QUALITY_TOOLS
 # Tools for different agent types
 SUPERVISOR_TOOLS = [conduct_research, research_complete]
 RESEARCHER_TOOLS = QUALITY_TOOLS  # MCP tools will be added directly to agents
-COMPRESSION_TOOLS = [synthesize_findings, assess_research_completeness] 
+COMPRESSION_TOOLS = [synthesize_findings, assess_research_completeness]

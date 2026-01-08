@@ -2,6 +2,7 @@ import logging
 import sys
 import os
 
+
 def get_logger(name: str) -> logging.Logger:
     """
     Configures and returns a logger with a standard format.

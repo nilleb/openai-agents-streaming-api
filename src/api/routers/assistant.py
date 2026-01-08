@@ -20,17 +20,15 @@ assistant_agent = Agent(
     - Be friendly and professional
     - If you're unsure about something, say so honestly
     
-    Keep your responses focused and useful."""
+    Keep your responses focused and useful.""",
 )
 
 # Create the router with standardized endpoints
 router = create_agent_router(
-    agent=assistant_agent,
-    prefix="/assistant",
-    agent_name="General Assistant"
+    agent=assistant_agent, prefix="/assistant", agent_name="General Assistant"
 )
 
 # The router now automatically has these endpoints:
 # POST /assistant/run - Synchronous execution
 # POST /assistant/stream - Real-time streaming
-# GET /assistant/info - Agent information 
+# GET /assistant/info - Agent information

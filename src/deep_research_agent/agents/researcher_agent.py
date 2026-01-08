@@ -15,8 +15,8 @@ from ..mcp import get_tavily_mcp_server
 
 def get_researcher_system_prompt(research_topic: str, available_tools: list) -> str:
     """Get system prompt for individual researcher agent following the implementation guide."""
-    tool_names = [getattr(tool, 'name', str(tool)) for tool in available_tools]
-    
+    tool_names = [getattr(tool, "name", str(tool)) for tool in available_tools]
+
     return f"""
         You are a research assistant conducting deep research on: {research_topic}
         
@@ -34,9 +34,11 @@ def get_researcher_system_prompt(research_topic: str, available_tools: list) -> 
         """
 
 
-def create_researcher_agent(research_topic: str, max_tool_calls: int = 5) -> Agent[ResearchContext]:
+def create_researcher_agent(
+    research_topic: str, max_tool_calls: int = 5
+) -> Agent[ResearchContext]:
     """Create an individual researcher agent with Tavily MCP server."""
-    
+
     config = DeepResearchConfig.from_environment()
 
     try:
@@ -45,21 +47,21 @@ def create_researcher_agent(research_topic: str, max_tool_calls: int = 5) -> Age
     except ValueError:
         # If Tavily API key is not available, continue without MCP server
         mcp_servers = []
-    
+
     # Available tools for the prompt
     available_tools = [assess_research_completeness, synthesize_findings]
     if mcp_servers:
         available_tools.append("tavily_search")  # MCP tools will be auto-discovered
-    
+
     return Agent[ResearchContext](
         name="Individual Researcher",
         instructions=get_researcher_system_prompt(research_topic, available_tools),
         model=config.researcher_model_name,
         tools=[assess_research_completeness, synthesize_findings],
         mcp_servers=mcp_servers,
-        mcp_config={"convert_schemas_to_strict": True}
+        mcp_config={"convert_schemas_to_strict": True},
     )
 
 
 # Default researcher agent instance (will be replaced by topic-specific ones)
-researcher_agent = None 
+researcher_agent = None

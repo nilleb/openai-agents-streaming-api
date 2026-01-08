@@ -8,8 +8,6 @@ Session memory is automatically enabled when:
 No additional configuration or code changes needed!
 """
 
-
-
 from agents import Agent
 
 
@@ -22,5 +20,5 @@ chat_agent = Agent(
     ),
     tools=[],
     handoffs=[],
-    model="gpt-4.1-mini"
+    model="gpt-4.1-mini",
 )

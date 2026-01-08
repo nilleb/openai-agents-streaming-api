@@ -15,3 +15,5 @@ Avoid using nested function.
 Functions do just one thing at a time.
 
 Use pydantic to represent the Settings (use the environment variables).
+
+Use the commands defined in the cli executable (lint, typecheck, test).

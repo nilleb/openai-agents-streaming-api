@@ -1,0 +1,6 @@
+# Helper Agent Configuration
+name: "Helper Agent"
+model: "gpt-4.1-mini"
+
+# This agent has no sub-agents (leaf node)
+# sub_agents: []

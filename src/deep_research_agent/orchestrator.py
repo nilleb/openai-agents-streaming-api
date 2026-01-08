@@ -13,11 +13,11 @@ from .models import ResearchContext
 def create_main_orchestrator_agent() -> Agent[ResearchContext]:
     """
     Create the main orchestrator agent
-    
+
     This follows the OpenAI Agents SDK agents_as_tools pattern where a single agent
     uses other agents as tools to execute each phase of the research workflow sequentially.
     """
-    
+
     # Create the specialized agents
     from .agents.clarification_agent import create_clarification_agent
     from .agents.research_brief_agent import create_research_brief_agent
@@ -27,37 +27,34 @@ def create_main_orchestrator_agent() -> Agent[ResearchContext]:
 
     clarification_agent = create_clarification_agent()
     research_brief_agent = create_research_brief_agent()
-    supervisor_agent = create_supervisor_agent(
-        max_concurrent_units=5,
-        max_iterations=3
-    )
+    supervisor_agent = create_supervisor_agent(max_concurrent_units=5, max_iterations=3)
     compression_agent = create_compression_agent()
     final_report_agent = create_final_report_agent()
 
     # Convert agents to tools using the agents_as_tools pattern
     clarification_tool = clarification_agent.as_tool(
         tool_name="clarify_user_request",
-        tool_description="Determine if the user's request needs clarification before proceeding with research"
+        tool_description="Determine if the user's request needs clarification before proceeding with research",
     )
 
     research_brief_tool = research_brief_agent.as_tool(
-        tool_name="create_research_brief", 
-        tool_description="Transform user request into a detailed, actionable research brief"
+        tool_name="create_research_brief",
+        tool_description="Transform user request into a detailed, actionable research brief",
     )
 
     research_execution_tool = supervisor_agent.as_tool(
         tool_name="execute_research_phase",
-        tool_description="Execute comprehensive research using parallel researchers and coordination"
+        tool_description="Execute comprehensive research using parallel researchers and coordination",
     )
 
     compression_tool = compression_agent.as_tool(
         tool_name="compress_research_findings",
-        tool_description="Compress and synthesize raw research findings into structured reports"
+        tool_description="Compress and synthesize raw research findings into structured reports",
     )
 
     final_report_tool = final_report_agent.as_tool(
         tool_name="generate_final_report",
-        tool_description="Generate the comprehensive final research report"
+        tool_description="Generate the comprehensive final research report",
     )
 
     orchestrator_instructions = """You are the Deep Research Agent Orchestrator, responsible for conducting comprehensive research investigations using a systematic, multi-phase approach.
@@ -116,6 +113,6 @@ Remember: You orchestrate the research process but delegate the actual work to s
             research_brief_tool,
             research_execution_tool,
             compression_tool,
-            final_report_tool
-        ]
+            final_report_tool,
+        ],
     )

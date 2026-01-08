@@ -6,6 +6,7 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 router = APIRouter()
 
+
 @router.post("/research", response_model=ReportData)
 async def research(query: str):
     logger.info(f"Received research request for query: '{query}'")

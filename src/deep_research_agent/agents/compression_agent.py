@@ -15,7 +15,7 @@ from ..config import DeepResearchConfig
 def get_compression_instructions() -> str:
     """Get instructions for the research compression agent."""
     current_date = datetime.now().strftime("%A, %B %d, %Y")
-    
+
     return f"""You are a research synthesis specialist responsible for compressing and structuring raw research findings while preserving all critical information. Your role is to transform disparate research outputs into a comprehensive, well-organized knowledge base.
 
 Current Date: {current_date}
@@ -161,14 +161,14 @@ Remember: Your role is to enhance the accessibility and usability of research fi
 def create_compression_agent():
     """Create the compression agent"""
     config = DeepResearchConfig.from_environment()
-    
+
     return Agent[ResearchContext](
         name="Research Compression Agent",
         instructions=get_compression_instructions(),
         model=config.compression_model_name,
         tools=[synthesize_findings, assess_research_completeness],
-        output_type=AgentOutputSchema(CompressedResearch, strict_json_schema=False)
+        output_type=AgentOutputSchema(CompressedResearch, strict_json_schema=False),
     )
 
 
-compression_agent = create_compression_agent() 
+compression_agent = create_compression_agent()

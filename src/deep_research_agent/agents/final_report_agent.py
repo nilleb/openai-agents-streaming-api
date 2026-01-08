@@ -14,7 +14,7 @@ from ..config import DeepResearchConfig
 def get_final_report_instructions() -> str:
     """Get instructions for the final report generator agent."""
     current_date = datetime.now().strftime("%A, %B %d, %Y")
-    
+
     return f"""You are a senior research analyst and report writer specializing in creating comprehensive, professional research reports. Your role is to synthesize all research findings into a well-structured, insightful, and actionable final report.
 
 Current Date: {current_date}
@@ -194,13 +194,13 @@ Remember: Your report will be used by decision-makers, researchers, and stakehol
 def create_final_report_agent():
     """Create the final report agent"""
     config = DeepResearchConfig.from_environment()
-    
+
     return Agent[ResearchContext](
         name="Final Report Generator",
         instructions=get_final_report_instructions(),
         model=config.final_report_model_name,
-        output_type=AgentOutputSchema(FinalReport, strict_json_schema=False)
+        output_type=AgentOutputSchema(FinalReport, strict_json_schema=False),
     )
 
 
-final_report_agent = create_final_report_agent() 
+final_report_agent = create_final_report_agent()

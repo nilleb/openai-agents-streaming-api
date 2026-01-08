@@ -15,12 +15,16 @@ src/
 ├── research_bot/       # Basic research agent package
 │   ├── agents/         # Planner, Search, and Writer agents
 │   └── manager.py      # Research orchestration
-└── deep_research_agent/ # Advanced multi-agent research system
-    ├── agents/         # Hierarchical specialized agents
-    ├── models.py       # Comprehensive data models
-    ├── orchestrator.py # Multi-agent coordination
-    ├── tools.py        # Research function tools
-    └── config.py       # Advanced configuration system
+├── deep_research_agent/ # Advanced multi-agent research system
+│   ├── agents/         # Hierarchical specialized agents
+│   ├── models.py       # Comprehensive data models
+│   ├── orchestrator.py # Multi-agent coordination
+│   ├── tools.py        # Research function tools
+│   └── config.py       # Advanced configuration system
+└── markdown_agents/    # File-based agent system
+    ├── loader.py       # YAML/Markdown agent loader
+    ├── builder.py      # Agent builder with Jinja2 support
+    └── examples/       # Example markdown agents
 ```
 
 Each agent package can be imported and used independently, making the system modular and scalable.
@@ -32,6 +36,9 @@ Each agent package can be imported and used independently, making the system mod
 - 🔄 **Event types**: Raw LLM responses, semantic agent events, handoffs
 - 💾 **Session Memory & Conversation History** - Persistent multi-turn conversations
 - 🧩 **Modular architecture** - each agent as separate package
+- 📝 **Markdown-based agents** - Define agents using YAML and Markdown files
+- 🎨 **Jinja2 templating** - Dynamic instructions with variable substitution
+- 🔗 **Hierarchical agents** - Sub-agents as tools with automatic loading
 - 📚 **Auto-generated OpenAPI docs** at `/docs`
 - 🔧 **Development-ready** with hot reload and comprehensive logging
 
@@ -97,6 +104,67 @@ LOG_LEVEL=INFO
 PORT=8000
 ```
 
+### OpenAI Instance Configuration
+
+This application supports both OpenAI's public API and private/self-hosted OpenAI-compatible instances. The configuration is controlled through environment variables that the OpenAI SDK reads automatically.
+
+#### Option 1: OpenAI Public API
+
+To use the official OpenAI API, you only need to set your API key:
+
+```bash
+# .env for OpenAI Public API
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+That's it! The SDK defaults to `https://api.openai.com/v1` when no base URL is specified.
+
+#### Option 2: Private OpenAI Instance (e.g., Azure OpenAI, vLLM, LocalAI, Ollama)
+
+To connect to a private or self-hosted OpenAI-compatible instance, set the base URL:
+
+```bash
+# .env for Private OpenAI Instance
+OPENAI_BASE_URL=http://your-private-instance.example.com:8080/v1
+
+# API key may be optional depending on your private instance configuration
+# Set to a dummy value if your instance doesn't require authentication
+OPENAI_API_KEY=not-required
+```
+
+**Examples for common private deployments:**
+
+```bash
+# Azure OpenAI Service
+OPENAI_BASE_URL=https://your-resource.openai.azure.com/openai/deployments/your-deployment
+OPENAI_API_KEY=your-azure-api-key
+
+# vLLM Server
+OPENAI_BASE_URL=http://localhost:8000/v1
+OPENAI_API_KEY=token-abc123
+
+# LocalAI
+OPENAI_BASE_URL=http://localhost:8080/v1
+OPENAI_API_KEY=not-needed
+
+# Ollama (with OpenAI compatibility)
+OPENAI_BASE_URL=http://localhost:11434/v1
+OPENAI_API_KEY=ollama
+```
+
+#### Additional OpenAI Environment Variables
+
+The OpenAI SDK also supports these optional environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | API key for authentication (required for public API) |
+| `OPENAI_BASE_URL` | Custom base URL for private instances |
+| `OPENAI_ORG_ID` | Organization ID (optional, for OpenAI enterprise) |
+| `OPENAI_PROJECT` | Project ID (optional, for OpenAI project-based billing) |
+
+> **Note:** Environment variables are loaded at application startup via `dotenv`. Ensure your `.env` file is in the project root directory.
+
 ## Running the Application
 
 ### Development Mode (Recommended)
@@ -160,6 +228,24 @@ DELETE /chat/session/{session_id}  # Clear conversation history
 POST /research          # Full research pipeline
 ```
 
+#### Orchestrator Agent (`/orchestrator/*`) - Markdown-based
+```bash
+POST /orchestrator/run      # Synchronous execution
+POST /orchestrator/stream   # Real-time streaming
+GET  /orchestrator/info     # Agent information & session config
+GET  /orchestrator/session/{session_id}  # Get all messages for session
+DELETE /orchestrator/session/{session_id}  # Clear conversation history
+```
+
+#### Helper Agent (`/helper/*`) - Markdown-based
+```bash
+POST /helper/run          # Synchronous execution
+POST /helper/stream       # Real-time streaming
+GET  /helper/info         # Agent information & session config
+GET  /helper/session/{session_id}  # Get all messages for session
+DELETE /helper/session/{session_id}  # Clear conversation history
+```
+
 ### Example Usage
 
 #### Basic Usage (No Memory)
@@ -186,6 +272,25 @@ curl -X POST "http://127.0.0.1:8000/chat/run" \
 curl -X POST "http://127.0.0.1:8000/chat/stream" \
   -H "Content-Type: application/json" \
   -d '{"input": "Give me some programming tips for my field", "session_id": "user_sarah_123"}' \
+  --no-buffer
+```
+
+#### Using Markdown Agents
+```bash
+# Test the orchestrator agent (markdown-based with sub-agents)
+curl -X POST "http://127.0.0.1:8000/orchestrator/run" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Analyze the sales data and provide recommendations"}'
+
+# Test the helper agent (simple markdown agent)
+curl -X POST "http://127.0.0.1:8000/helper/run" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Help me understand how to use this API", "session_id": "user_123"}'
+
+# Stream from orchestrator agent
+curl -X POST "http://127.0.0.1:8000/orchestrator/stream" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Coordinate a complex task", "session_id": "task_456"}' \
   --no-buffer
 ```
 
@@ -293,6 +398,21 @@ from src.research_bot.manager import ResearchManager
 
 manager = ResearchManager()
 report = await manager.run("AI trends 2024")
+
+# Using markdown agents programmatically
+from pathlib import Path
+from src.markdown_agents import load_agent_from_path
+from datetime import datetime
+
+agent_path = Path("src/markdown_agents/examples/orchestrator.yaml")
+agent = load_agent_from_path(
+    agent_path,
+    variables={
+        "current_date": datetime.now().strftime("%Y-%m-%d"),
+        "user_name": "Python User"
+    }
+)
+result = await Runner.run(agent, "Analyze the data and provide recommendations")
 ```
 
 ## Project Structure Details
@@ -318,12 +438,283 @@ The streaming endpoints emit structured events:
 
 ### Extending the System
 
+#### Option 1: Code-based Agent (Traditional)
+
 To add a new agent **with automatic session support**:
 
 1. Create `src/your_agent/main.py` with agent definition
 2. Create `src/api/routers/your_agent.py` using `create_agent_router()`
 3. Include the router in `src/api/main.py`
 4. **Sessions work automatically** - no additional code needed!
+
+**Example:**
+```python
+# src/api/routers/your_agent.py
+from agents import Agent
+from ..utils.agent_router import create_agent_router
+
+agent = Agent(
+    name="Your Agent",
+    instructions="Your agent instructions here"
+)
+
+router = create_agent_router(
+    agent=agent,
+    prefix="/your-agent",
+    agent_name="Your Agent"
+)
+```
+
+#### Option 2: Markdown-based Agent (File-based)
+
+Markdown agents allow you to define agents using YAML configuration and Markdown instruction files, making them easy to version control and modify without code changes.
+
+##### Step-by-Step Guide: Adding a New Markdown Agent
+
+**Step 1: Create the Agent Directory Structure**
+
+Create a directory for your agent in the `markdown_agents` folder:
+
+```bash
+mkdir -p src/markdown_agents/my_new_agent
+```
+
+**Step 2: Create the YAML Configuration File**
+
+Create `src/markdown_agents/my_new_agent/my_new_agent.yaml`:
+
+```yaml
+# Agent Configuration
+name: "My New Agent"
+model: "gpt-4.1-mini"  # Optional: defaults to builder's default_model
+
+# Optional: Reference sub-agents (they will be loaded and converted to tools)
+sub_agents:
+  - "helper_agent"      # Same directory
+  - "subfolder/other_agent"  # Subfolder path
+
+# Optional: Custom tool name prefix for sub-agents
+tool_name_prefix: ""
+
+# Optional: Custom descriptions for sub-agent tools
+tool_descriptions:
+  "Helper Agent": "A helper agent for general tasks"
+  "Other Agent": "An agent for specialized tasks"
+```
+
+**Key YAML Fields:**
+- `name`: Display name for your agent
+- `model`: OpenAI model to use (e.g., "gpt-4.1-mini", "gpt-4")
+- `sub_agents`: List of agent references (paths or names) - optional
+- `tool_descriptions`: Map of agent names to tool descriptions - optional
+
+**Step 3: Create the Markdown Instructions File**
+
+Create `src/markdown_agents/my_new_agent/my_new_agent.md`:
+
+```markdown
+# My New Agent Instructions
+
+You are a specialized agent designed to help users with specific tasks.
+
+## Current Context
+
+- **Date**: {{ current_date }}
+- **User**: {{ user_name | default("Guest") }}
+- **Environment**: {{ environment | default("development") }}
+
+## Your Role
+
+- Provide helpful assistance
+- Answer questions clearly
+- Use available tools when needed
+
+## Guidelines
+
+- Be concise but thorough
+- Ask for clarification when needed
+- Always confirm task completion
+
+{% if sub_agents %}
+## Available Tools
+
+You have access to the following tools:
+{% for agent in sub_agents %}
+- {{ agent }}: Use this for specific tasks
+{% endfor %}
+{% endif %}
+```
+
+**Key Markdown Features:**
+- Use `{{ variable_name }}` for variable substitution
+- Use `{{ variable | default("value") }}` for default values
+- Use `{% if condition %}...{% endif %}` for conditional blocks
+- Use `{% for item in list %}...{% endfor %}` for loops
+
+**Step 4: Create the Router File**
+
+Create `src/api/routers/my_new_agent.py`:
+
+```python
+"""
+My New Agent Router
+
+This router loads a markdown-based agent and exposes it via API endpoints.
+"""
+
+from pathlib import Path
+from datetime import datetime
+
+from ..utils.agent_router import create_agent_router
+
+# Path to the agent YAML file
+AGENT_PATH = Path(__file__).parent.parent.parent / "markdown_agents" / "my_new_agent" / "my_new_agent.yaml"
+
+# Variables for Jinja2 templating in the markdown instructions
+MARKDOWN_VARIABLES = {
+    "current_date": datetime.now().strftime("%A, %B %d, %Y"),
+    "user_name": "API User",
+    "environment": "production"
+}
+
+# Create the router with standardized endpoints
+router = create_agent_router(
+    agent=str(AGENT_PATH),           # Path to YAML file
+    prefix="/my-new-agent",          # URL prefix for endpoints
+    agent_name="My New Agent",       # Human-readable name
+    markdown_variables=MARKDOWN_VARIABLES  # Variables for templating
+)
+
+# The router automatically provides these endpoints:
+# POST /my-new-agent/run      - Synchronous execution
+# POST /my-new-agent/stream   - Real-time streaming
+# GET  /my-new-agent/info     - Agent information
+# GET  /my-new-agent/session/{session_id}  - Get session messages
+# DELETE /my-new-agent/session/{session_id}  - Clear session
+```
+
+**Step 5: Register the Router in Main Application**
+
+Edit `src/api/main.py` and add your router:
+
+```python
+# Add import at the top
+from .routers.my_new_agent import router as my_new_agent_router
+
+# Add router registration with other routers
+app.include_router(my_new_agent_router)  # /my-new-agent/* endpoints
+```
+
+**Step 6: Test Your Agent**
+
+Start the server and test your new agent:
+
+```bash
+# Start the server
+uv run uvicorn src.api.main:app --reload
+
+# Test the agent
+curl -X POST "http://127.0.0.1:8000/my-new-agent/run" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Hello, can you help me?"}'
+
+# Check agent info
+curl -X GET "http://127.0.0.1:8000/my-new-agent/info"
+```
+
+##### Complete Example: Simple Agent Without Sub-agents
+
+**File: `src/markdown_agents/simple_agent/simple_agent.yaml`**
+```yaml
+name: "Simple Agent"
+model: "gpt-4.1-mini"
+# No sub_agents - this is a standalone agent
+```
+
+**File: `src/markdown_agents/simple_agent/simple_agent.md`**
+```markdown
+# Simple Agent Instructions
+
+You are a simple, helpful assistant.
+
+Today is {{ current_date }}.
+
+Your task is to help users with their questions.
+```
+
+**File: `src/api/routers/simple_agent.py`**
+```python
+from pathlib import Path
+from datetime import datetime
+from ..utils.agent_router import create_agent_router
+
+AGENT_PATH = Path(__file__).parent.parent.parent / "markdown_agents" / "simple_agent" / "simple_agent.yaml"
+
+router = create_agent_router(
+    agent=str(AGENT_PATH),
+    prefix="/simple",
+    agent_name="Simple Agent",
+    markdown_variables={
+        "current_date": datetime.now().strftime("%Y-%m-%d")
+    }
+)
+```
+
+##### Complete Example: Agent With Sub-agents
+
+**File: `src/markdown_agents/coordinator/coordinator.yaml`**
+```yaml
+name: "Task Coordinator"
+model: "gpt-4.1-mini"
+
+# Reference other agents as sub-agents
+sub_agents:
+  - "helper_agent"
+  - "analyzer_agent"
+
+tool_descriptions:
+  "Helper Agent": "Use for general assistance tasks"
+  "Analyzer Agent": "Use for data analysis tasks"
+```
+
+**File: `src/markdown_agents/coordinator/coordinator.md`**
+```markdown
+# Task Coordinator Instructions
+
+You coordinate complex tasks by delegating to specialized sub-agents.
+
+## Available Tools
+
+- **Helper Agent**: Use `helper_agent` for general tasks
+- **Analyzer Agent**: Use `analyzer_agent` for analysis tasks
+
+## Workflow
+
+1. Understand the user's request
+2. Break it down into subtasks
+3. Use appropriate sub-agents for each subtask
+4. Synthesize results into final response
+```
+
+##### Benefits of Markdown Agents
+
+- ✅ **Version control friendly** - Easy to track changes in git
+- ✅ **Non-programmer friendly** - Edit instructions without Python knowledge
+- ✅ **Dynamic templating** - Use Jinja2 variables for runtime customization
+- ✅ **Hierarchical structure** - Reference sub-agents easily
+- ✅ **Separation of concerns** - Config, instructions, and code are separate
+- ✅ **Hot reload support** - Changes to markdown files can be reloaded without code changes
+
+##### Tips and Best Practices
+
+1. **File Naming**: Use lowercase with underscores (e.g., `my_agent.yaml`, `my_agent.md`)
+2. **Path References**: Sub-agents can be referenced as:
+   - Simple names: `"helper_agent"` (searches in same directory)
+   - Relative paths: `"subfolder/agent_name"`
+   - Absolute paths: `"/full/path/to/agent"`
+3. **Variables**: Pass runtime variables through `markdown_variables` in the router
+4. **Testing**: Always test your agent after creation using the `/info` endpoint first
+5. **Documentation**: Document your agent's purpose in the markdown instructions file
 
 ## Troubleshooting
 

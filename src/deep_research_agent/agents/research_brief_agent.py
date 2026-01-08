@@ -14,7 +14,7 @@ from ..config import DeepResearchConfig
 def get_research_brief_instructions() -> str:
     """Get instructions for the research brief generator agent."""
     current_date = datetime.now().strftime("%A, %B %d, %Y")
-    
+
     return f"""You are a senior research strategist specializing in converting user requests into comprehensive, actionable research briefs. Your role is to transform conversational queries into detailed research specifications that will guide an entire research operation.
 
 Current Date: {current_date}
@@ -99,13 +99,13 @@ Remember: Your brief will guide multiple researchers conducting parallel investi
 def create_research_brief_agent():
     """Create the research brief agent with proper handoffs."""
     config = DeepResearchConfig.from_environment()
-    
+
     return Agent[ResearchContext](
         name="Research Brief Generator",
         instructions=get_research_brief_instructions(),
         model=config.research_brief_model_name,
-        output_type=AgentOutputSchema(ResearchBriefResponse, strict_json_schema=False)
+        output_type=AgentOutputSchema(ResearchBriefResponse, strict_json_schema=False),
     )
 
 
-research_brief_agent = create_research_brief_agent() 
+research_brief_agent = create_research_brief_agent()

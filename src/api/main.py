@@ -9,6 +9,8 @@ from agents import set_default_openai_api
 from .routers.research import router as research_router
 from .routers.assistant import router as assistant_router
 from .routers.chat import router as chat_router
+from .routers.orchestrator import router as orchestrator_router
+from .routers.helper import router as helper_router
 from .utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -18,7 +20,7 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting OpenAI Agents Streaming API application...")
-    
+
     # Load environment variables
     load_dotenv(override=True)
     api_key = os.getenv("OPENAI_API_KEY")
@@ -27,11 +29,11 @@ async def lifespan(app: FastAPI):
     else:
         set_default_openai_api(api_key)
         logger.info("OpenAI API key configured")
-    
+
     logger.info("OpenAI Agents Streaming API startup complete")
-    
+
     yield
-    
+
     logger.info("OpenAI Agents Streaming API shutdown complete")
 
 
@@ -42,7 +44,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware for browser compatibility
@@ -55,9 +57,12 @@ app.add_middleware(
 )
 
 # Include agent routers - each agent gets its own dedicated endpoints
-app.include_router(research_router)      # /research/* endpoints
-app.include_router(assistant_router)     # /assistant/* endpoints  
-app.include_router(chat_router)         # /chat/* endpoints
+app.include_router(research_router)  # /research/* endpoints
+app.include_router(assistant_router)  # /assistant/* endpoints
+app.include_router(chat_router)  # /chat/* endpoints
+app.include_router(orchestrator_router)  # /orchestrator/* endpoints (markdown agent)
+app.include_router(helper_router)  # /helper/* endpoints (markdown agent)
+
 
 @app.get("/")
 async def root():
@@ -70,10 +75,11 @@ async def root():
             "Per-agent dedicated endpoints",
             "Streaming events for agent updates, raw responses, and run items",
             "Simple and scalable",
-            "OpenAI Agents SDK"
+            "OpenAI Agents SDK",
         ],
-        "api_docs": "/docs"
+        "api_docs": "/docs",
     }
+
 
 @app.get("/health")
 async def health_check():
@@ -83,14 +89,11 @@ async def health_check():
         "version": "1.0.0",
     }
 
+
 if __name__ == "__main__":
     import uvicorn
-    
+
     logger.info("Starting OpenAI Agents Streaming API with uvicorn...")
     uvicorn.run(
-        "src.api.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        "src.api.main:app", host="0.0.0.0", port=8000, reload=True, log_level="info"
     )

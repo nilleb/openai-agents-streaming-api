@@ -8,7 +8,14 @@ Implements the supervisor orchestration logic from the Deep Research Agent Imple
 import asyncio
 from typing import List
 from datetime import datetime
-from agents import Agent, AgentOutputSchema, RunContextWrapper, Runner, function_tool, ModelSettings
+from agents import (
+    Agent,
+    AgentOutputSchema,
+    RunContextWrapper,
+    Runner,
+    function_tool,
+    ModelSettings,
+)
 from ..models import SupervisorDecision, ResearchContext, ResearchTask, ResearchStatus
 from ..tools import conduct_research, research_complete
 from ..config import DeepResearchConfig
@@ -22,51 +29,60 @@ class ResearchSupervisor:
         self.max_concurrent_units = max_concurrent_units
         self.max_iterations = max_iterations
 
-    async def _plan_research_iteration(self, ctx: RunContextWrapper[ResearchContext]) -> SupervisorDecision:
+    async def _plan_research_iteration(
+        self, ctx: RunContextWrapper[ResearchContext]
+    ) -> SupervisorDecision:
         """
         Asks the supervisor agent (LLM) to plan the next research iteration.
         """
-        current_findings_summary = "\n".join(ctx.context.research_findings) if ctx.context.research_findings else "No findings yet."
-        research_brief_content = ctx.context.research_brief or "No research brief provided."
+        current_findings_summary = (
+            "\n".join(ctx.context.research_findings)
+            if ctx.context.research_findings
+            else "No findings yet."
+        )
+        research_brief_content = (
+            ctx.context.research_brief or "No research brief provided."
+        )
 
         prompt = get_supervisor_instructions(
             self.max_concurrent_units,
             self.max_iterations,
             research_brief_content,
             current_findings_summary,
-            ctx.context.current_iteration
+            ctx.context.current_iteration,
         )
 
         config = DeepResearchConfig.from_environment()
 
-        supervisor_agent_instance = Agent['ResearchContext'](
+        supervisor_agent_instance = Agent["ResearchContext"](
             name="Research Supervisor",
             instructions=prompt,
             model=config.supervisor_model_name,
             tools=[conduct_research, research_complete],
-            output_type=AgentOutputSchema(SupervisorDecision, strict_json_schema=False)
+            output_type=AgentOutputSchema(SupervisorDecision, strict_json_schema=False),
         )
-        
+
         # The LLM's response is a SupervisorDecision, which will contain tool calls
         response = await Runner.run(
             starting_agent=supervisor_agent_instance,
             input="Make your decision for the next research step.",
-            context=ctx.context
+            context=ctx.context,
         )
         return response.final_output
 
-    async def _execute_research_tasks(self, ctx: RunContextWrapper[ResearchContext], research_tasks: List[ResearchTask]):
+    async def _execute_research_tasks(
+        self,
+        ctx: RunContextWrapper[ResearchContext],
+        research_tasks: List[ResearchTask],
+    ):
         """
         Executes research tasks in parallel.
         """
-        active_tasks = research_tasks[:self.max_concurrent_units]
+        active_tasks = research_tasks[: self.max_concurrent_units]
         logger.info(f"Executing {len(active_tasks)} research tasks in parallel.")
 
         # Create a list of coroutines for parallel execution
-        tasks_to_run = [
-            conduct_research(ctx, task.topic)
-            for task in active_tasks
-        ]
+        tasks_to_run = [conduct_research(ctx, task.topic) for task in active_tasks]
 
         # Execute in parallel and collect results
         # Note: asyncio.gather returns results in the order the awaitables were passed
@@ -74,43 +90,66 @@ class ResearchSupervisor:
 
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error(f"Error executing research task '{active_tasks[i].topic}': {result}")
+                logger.error(
+                    f"Error executing research task '{active_tasks[i].topic}': {result}"
+                )
                 ctx.context.error_message = str(result)
             else:
                 # conduct_research already appends to context.research_findings
-                logger.info(f"Research task '{active_tasks[i].topic}' completed successfully.")
+                logger.info(
+                    f"Research task '{active_tasks[i].topic}' completed successfully."
+                )
 
-    def _should_terminate_research(self, ctx: RunContextWrapper[ResearchContext], supervisor_decision: SupervisorDecision) -> bool:
+    def _should_terminate_research(
+        self,
+        ctx: RunContextWrapper[ResearchContext],
+        supervisor_decision: SupervisorDecision,
+    ) -> bool:
         """
         Determines if the overall research process should terminate.
         """
         # Termination if max iterations reached
         if ctx.context.current_iteration >= self.max_iterations:
-            logger.info(f"Terminating research: Maximum iterations ({self.max_iterations}) reached.")
+            logger.info(
+                f"Terminating research: Maximum iterations ({self.max_iterations}) reached."
+            )
             return True
 
         # Termination if supervisor explicitly calls research_complete
         if supervisor_decision.action == "complete_research":
-            logger.info(f"Terminating research: Supervisor signaled completion with reason: {supervisor_decision.completion_reason}")
+            logger.info(
+                f"Terminating research: Supervisor signaled completion with reason: {supervisor_decision.completion_reason}"
+            )
             return True
 
         # Termination if no new research tasks were generated in this iteration
-        if not supervisor_decision.research_tasks and supervisor_decision.action != "complete_research":
-            logger.info("Terminating research: No new research tasks generated by supervisor, and not explicitly completing.")
+        if (
+            not supervisor_decision.research_tasks
+            and supervisor_decision.action != "complete_research"
+        ):
+            logger.info(
+                "Terminating research: No new research tasks generated by supervisor, and not explicitly completing."
+            )
             return True
 
         return False
 
-    async def run_supervisor_orchestration(self, ctx: RunContextWrapper[ResearchContext], input_query: str) -> str:
+    async def run_supervisor_orchestration(
+        self, ctx: RunContextWrapper[ResearchContext], input_query: str
+    ) -> str:
         """
         Main orchestration loop for the research supervisor.
         """
-        ctx.context.research_brief = input_query # The input query becomes the initial research brief
+        ctx.context.research_brief = (
+            input_query  # The input query becomes the initial research brief
+        )
         ctx.context.current_iteration = 0
 
         while True:
             ctx.context.current_iteration += 1
-            logger.info(f"Supervisor orchestration: Starting iteration {ctx.context.current_iteration}/{self.max_iterations}")
+            logger.info(
+                f"Supervisor orchestration: Starting iteration {ctx.context.current_iteration}/{self.max_iterations}"
+            )
 
             # Phase 1: Planning - LLM decides next steps
             supervisor_decision = await self._plan_research_iteration(ctx)
@@ -123,15 +162,25 @@ class ResearchSupervisor:
 
             # Phase 3: Execute Research Tasks (if any)
             if supervisor_decision.research_tasks:
-                await self._execute_research_tasks(ctx, supervisor_decision.research_tasks)
+                await self._execute_research_tasks(
+                    ctx, supervisor_decision.research_tasks
+                )
             else:
-                logger.info("Supervisor decided not to conduct any new research tasks in this iteration.")
+                logger.info(
+                    "Supervisor decided not to conduct any new research tasks in this iteration."
+                )
 
 
-def get_supervisor_instructions(max_concurrent_units: int, max_iterations: int, research_brief: str, current_findings: str, current_iteration: int) -> str:
+def get_supervisor_instructions(
+    max_concurrent_units: int,
+    max_iterations: int,
+    research_brief: str,
+    current_findings: str,
+    current_iteration: int,
+) -> str:
     """Get instructions for the research supervisor agent."""
     current_date = datetime.now().strftime("%A, %B %d, %Y")
-    
+
     instructions_content = f"""You are a senior research supervisor responsible for planning and coordinating comprehensive research investigations. Your role is to analyze research briefs, identify knowledge gaps, and orchestrate multiple specialized researchers to conduct thorough investigations.
 
 Current Date: {current_date}
@@ -194,32 +243,32 @@ DECISION CRITERIA (for your reasoning):
 - All major aspects of the research brief are covered.
 
 Remember: Your goal is to orchestrate a comprehensive research investigation by *making decisions* that the Python execution environment will then carry out. Your output should be a structured `SupervisorDecision` that can be directly interpreted by the system. Do not perform the research yourself, only decide on the next steps."""
-    
+
     return instructions_content
 
 
 def create_supervisor_agent(
-    max_concurrent_units: int = 5,
-    max_iterations: int = 3
+    max_concurrent_units: int = 5, max_iterations: int = 3
 ) -> Agent[ResearchContext]:
     """
     Create the research supervisor agent.
-    
+
     This agent will delegate its execution to the ResearchSupervisor class.
-    
+
     Args:
         max_concurrent_units: Maximum number of parallel research units
         max_iterations: Maximum number of research iterations
     """
     supervisor_orchestrator = ResearchSupervisor(max_concurrent_units, max_iterations)
 
-    @function_tool  
-    async def run_research_orchestration(  
-        ctx: RunContextWrapper[ResearchContext],   
-        input_query: str  
-    ) -> str:  
-        """Orchestrate the complete research process."""  
-        return await supervisor_orchestrator.run_supervisor_orchestration(ctx, input_query)  
+    @function_tool
+    async def run_research_orchestration(
+        ctx: RunContextWrapper[ResearchContext], input_query: str
+    ) -> str:
+        """Orchestrate the complete research process."""
+        return await supervisor_orchestrator.run_supervisor_orchestration(
+            ctx, input_query
+        )
 
     return Agent[ResearchContext](
         name="Research Supervisor",
@@ -227,7 +276,7 @@ def create_supervisor_agent(
         model=DeepResearchConfig.from_environment().supervisor_model_name,
         tools=[run_research_orchestration],
         model_settings=ModelSettings(tool_choice="required"),
-        tool_use_behavior="stop_on_first_tool"
+        tool_use_behavior="stop_on_first_tool",
     )
 
 

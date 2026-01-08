@@ -8,4 +8,4 @@ from .config import DeepResearchConfig
 __version__ = "1.0.0"
 __all__ = [
     "DeepResearchConfig",
-] 
+]

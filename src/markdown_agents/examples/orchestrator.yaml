@@ -1,0 +1,14 @@
+# Orchestrator Agent Configuration
+name: "Example Orchestrator"
+model: "gpt-4.1-mini"
+
+# Sub-agents that this orchestrator uses as tools
+sub_agents:
+  - "helper_agent"
+  - "analyzer_agent"
+
+# Optional: Custom tool names and descriptions
+tool_name_prefix: ""
+tool_descriptions:
+  "Helper Agent": "A helper agent that assists with various tasks"
+  "Analyzer Agent": "An analyzer agent that performs detailed analysis"

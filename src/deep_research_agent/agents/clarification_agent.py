@@ -14,7 +14,7 @@ from ..config import DeepResearchConfig
 def get_clarification_instructions() -> str:
     """Get instructions for the clarification agent."""
     current_date = datetime.now().strftime("%A, %B %d, %Y")
-    
+
     return f"""You are a research clarification specialist. Your role is to determine if a user's research request needs clarification before proceeding with comprehensive research.
 
 Current Date: {current_date}
@@ -80,13 +80,13 @@ FLEXIBILITY:
 def create_clarification_agent():
     """Create the clarification agent"""
     config = DeepResearchConfig.from_environment()
-    
+
     return Agent[ResearchContext](
         name="Clarification Agent",
         instructions=get_clarification_instructions(),
         model=config.clarification_model_name,
-        output_type=AgentOutputSchema(ClarificationResponse, strict_json_schema=False)
+        output_type=AgentOutputSchema(ClarificationResponse, strict_json_schema=False),
     )
 
 
-clarification_agent = create_clarification_agent() 
+clarification_agent = create_clarification_agent()
